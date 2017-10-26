@@ -6,7 +6,7 @@ import sys
 import time
 
 ACME_SERVER = 'https://acme-v01.api.letsencrypt.org/directory'
-CERTBOT_DIRECOTRY = '/etc/letsencrypt/live'
+CERTBOT_DIRECTORY = '/etc/letsencrypt/live'
 
 def run_process(header, args):
   print('===============================================================================')
@@ -41,8 +41,8 @@ def ensure_output_directory():
 
 def concat_certificates():
   output_directory = ensure_output_directory()
-  for name in os.listdir(CERTBOT_DIRECOTRY):
-    path = os.path.join(CERTBOT_DIRECOTRY, name)
+  for name in os.listdir(CERTBOT_DIRECTORY):
+    path = os.path.join(CERTBOT_DIRECTORY, name)
     if os.path.isdir(path):
       with open(os.path.join(output_directory, name + '.pem'), 'w') as fo:
         for name in ['fullchain.pem', 'privkey.pem']:
