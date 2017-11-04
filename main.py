@@ -1,3 +1,34 @@
+#!/usr/bin/env python
+#
+# Certbot docker script
+#
+# By default, first new certificates are requested, then updates and pending
+# certificates daily at 3 am. Useful to run as on Docker e.g. in combination
+# with HAProxy.
+#
+# Configuration uses environment variables:
+#   CERTBOT_EMAIL             Email address (default the empty string)
+#   CERTBOT_DOMAINS           Whitespace-separated list of domains to request
+#   CERTBOT_OUTPUT_DIRECTORY  Where to put PEM files with key+cert (default /certs)
+#   CERTBOT_TOUCH_FILE        File to touch when certificates changed
+#   CERTBOT_ENABLED           Set to 1 to use certbot (default 0)
+#
+# The touch file can be used to trigger a restart of the webserver running
+# in a different container, if you use a shared volume.
+#
+# Note that you need to set CERTBOT_ENABLED=1 in production, or else a dummy
+# certificate will be generated. This is to allow running a development setup
+# by default (which won't have the right DNS so letsencrypt will fail).
+#
+# Also, before the very first certificate is obtained from letsencrypt, a dummy
+# certificate is generated. If this wouldn't happen, most webservers would fail
+# to start at all, and the web-based letsencrypt verification process would fail.
+# When a new certificate is available, a webserver like HAProxy will pickup the
+# proper one.
+#
+# If you run this script with an argument, it will do the process once and exit,
+# but this may be subject to change.
+#
 import datetime
 import fnmatch
 import os
@@ -29,9 +60,12 @@ def run_certbot_renew():
   run_process('Renewing certificates', ['certbot', 'renew', '--post-hook', post_hook])
 
 def get_certificates():
-  email = os.getenv('CERTBOT_EMAIL', '')
-  for domain in os.environ['CERTBOT_DOMAINS'].split():
-    run_certbot_certonly(domain, email)
+  if os.getenv('CERTBOT_ENABLED', '0') == '1':
+    email = os.getenv('CERTBOT_EMAIL', '')
+    for domain in os.environ['CERTBOT_DOMAINS'].split():
+      run_certbot_certonly(domain, email)
+  else:
+    print('Skipping official certificates because CERTBOT_ENABLED is not 1')
 
 def ensure_output_directory():
   output_directory = os.getenv('CERTBOT_OUTPUT_DIRECTORY', '/certs')
@@ -40,6 +74,7 @@ def ensure_output_directory():
   return output_directory
 
 def concat_certificates():
+  if not os.path.exists(CERTBOT_DIRECTORY): return
   output_directory = ensure_output_directory()
   for name in os.listdir(CERTBOT_DIRECTORY):
     path = os.path.join(CERTBOT_DIRECTORY, name)
@@ -82,7 +117,8 @@ def run_main():
     time.sleep((renew_time - now).total_seconds())
     run_certbot_renew()
 
-if len(sys.argv) > 1:
-  run_post()
-else:
-  run_main()
+if __name__ == '__main__':
+  if len(sys.argv) > 1:
+    run_post()
+  else:
+    run_main()
