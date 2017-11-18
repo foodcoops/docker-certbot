@@ -11,14 +11,13 @@
 #   CERTBOT_DOMAINS           Whitespace-separated list of domains to request
 #   CERTBOT_OUTPUT_DIRECTORY  Where to put PEM files with key+cert (default /certs)
 #   CERTBOT_TOUCH_FILE        File to touch when certificates changed
-#   CERTBOT_ENABLED           Set to 1 to use certbot (default 0)
+#   CERTBOT_DISABLED          Set to 1 to disable certbot (default 0)
 #
 # The touch file can be used to trigger a restart of the webserver running
 # in a different container, if you use a shared volume.
 #
-# Note that you need to set CERTBOT_ENABLED=1 in production, or else a dummy
-# certificate will be generated. This is to allow running a development setup
-# by default (which won't have the right DNS so letsencrypt will fail).
+# Note that you can set CERTBOT_DISABLED=1 during development, if you do not have
+# global DNS entries.
 #
 # Also, before the very first certificate is obtained from letsencrypt, a dummy
 # certificate is generated. If this wouldn't happen, most webservers would fail
@@ -60,12 +59,12 @@ def run_certbot_renew():
   run_process('Renewing certificates', ['certbot', 'renew', '--post-hook', post_hook])
 
 def get_certificates():
-  if os.getenv('CERTBOT_ENABLED', '0') == '1':
+  if os.getenv('CERTBOT_DISABLED', '0') != '1':
     email = os.getenv('CERTBOT_EMAIL', '')
     for domain in os.environ['CERTBOT_DOMAINS'].split():
       run_certbot_certonly(domain, email)
   else:
-    print('Skipping official certificates because CERTBOT_ENABLED is not 1')
+    print('Skipping official certificates because CERTBOT_DISABLED is 1')
 
 def ensure_output_directory():
   output_directory = os.getenv('CERTBOT_OUTPUT_DIRECTORY', '/certs')
