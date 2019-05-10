@@ -12,6 +12,7 @@
 #   CERTBOT_OUTPUT_DIRECTORY  Where to put PEM files with key+cert (default /certs)
 #   CERTBOT_TOUCH_FILE        File to touch when certificates changed
 #   CERTBOT_DISABLED          Set to 1 to disable certbot (default 0)
+#   CERTBOT_DHPARAM_BITS      Number of bits for DH parameters (default 2048)
 #
 # The touch file can be used to trigger a restart of the webserver running
 # in a different container, if you use a shared volume.
@@ -83,6 +84,18 @@ def concat_certificates():
           with open(os.path.join(path, name), 'r') as fi:
             fo.write(fi.read())
             fo.write('\n')
+      append_dhparams(path)
+
+def append_dhparams(path):
+  # appends newly generated DH params to file (against LOGJAM)
+  bits = os.getenv('CERTBOT_DHPARAM_BITS', '2048')
+  dhparam_path = '/tmp/dhparam.tmp'
+  run_process('Generating DH parameters', ['openssl', 'dhparam', '-out', dhparam_path, bits])
+  with open(path, 'a') as fo:
+    with open(dhparam_path, 'r') as fi:
+      fo.write(fi.read())
+      fo.write('\n')
+  os.unlink(dhparam_path)
 
 def create_or_remove_localhost_certificate():
   output_directory = ensure_output_directory()
@@ -92,6 +105,7 @@ def create_or_remove_localhost_certificate():
     run_process('Generating localhost certificate', ['openssl', 'req', '-x509',
       '-newkey', 'rsa:2048', '-nodes', '-keyout', path, '-out', path,
       '-subj', '/CN=localhost'])
+    append_dhparams(path)
   elif pems > 1 and os.path.isfile(path):
     os.unlink(path)
 
