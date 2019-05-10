@@ -79,12 +79,13 @@ def concat_certificates():
   for name in os.listdir(CERTBOT_DIRECTORY):
     path = os.path.join(CERTBOT_DIRECTORY, name)
     if os.path.isdir(path):
-      with open(os.path.join(output_directory, name + '.pem'), 'w') as fo:
+      outpath = os.path.join(output_directory, name + '.pem')
+      with open(outpath, 'w') as fo:
         for name in ['fullchain.pem', 'privkey.pem']:
           with open(os.path.join(path, name), 'r') as fi:
             fo.write(fi.read())
             fo.write('\n')
-      append_dhparams(path)
+      append_dhparams(outpath)
 
 def append_dhparams(path):
   # appends newly generated DH params to file (against LOGJAM)
