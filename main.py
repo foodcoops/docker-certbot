@@ -36,7 +36,7 @@ import subprocess
 import sys
 import time
 
-ACME_SERVER = 'https://acme-v01.api.letsencrypt.org/directory'
+ACME_SERVER = 'https://acme-v02.api.letsencrypt.org/directory'
 CERTBOT_DIRECTORY = '/etc/letsencrypt/live'
 
 def run_process(header, args):
